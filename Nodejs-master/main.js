@@ -9,22 +9,29 @@ var cookie = require('cookie');
 
 function authIsOwner(request, response){
   var isOwner = false;
-    var cookies = {};
-    if(request.headers.cookie){
-      var cookies = cookie.parse(request.headers.cookie);
-    }
-    if(cookies.email === 'egoing777@gmail.com' && cookies.password === '111111'){
-      isOwner = true;
-    }
-    return isOwner
+  var cookies = {};
+  if (request.headers.cookie) {
+    cookies = cookie.parse(request.headers.cookie);
+  }
+  if (cookies.email === 'egoing777@gmail.com' && cookies.password === '111111') {
+    isOwner = true;
+  }
+  return isOwner;
 }
+
+function authStatusUI(request, response) {
+  var authStatusUI = '<a href="/login">login</a>';
+  if (authIsOwner(request, response)) {
+    authStatusUI = '<a href="/logout_process">logout</a>';
+  }
+  return authStatusUI;
+}
+
 
 var app = http.createServer(function(request,response){
     var _url = request.url;
     var queryData = url.parse(_url, true).query;
     var pathname = url.parse(_url, true).pathname;
-    var isOwner = authIsOwner(request, response);
-    console.log(isOwner);
     
     if(pathname === '/'){
       if(queryData.id === undefined){
@@ -34,7 +41,8 @@ var app = http.createServer(function(request,response){
           var list = template.list(filelist);
           var html = template.HTML(title, list,
             `<h2>${title}</h2>${description}`,
-            `<a href="/create">create</a>`
+            `<a href="/create">create</a>`,
+            authStatusUI(request, response)
           );
           response.writeHead(200);
           response.end(html);
@@ -77,7 +85,7 @@ var app = http.createServer(function(request,response){
               <input type="submit">
             </p>
           </form>
-        `, '');
+        `, '', authStatusUI(request, response));
         response.writeHead(200);
         response.end(html);
       });
@@ -114,7 +122,8 @@ var app = http.createServer(function(request,response){
               </p>
             </form>
             `,
-            `<a href="/create">create</a> <a href="/update?id=${title}">update</a>`
+            `<a href="/create">create</a> <a href="/update?id=${title}">update</a>`,
+            authStatusUI(request, response)
           );
           response.writeHead(200);
           response.end(html);
