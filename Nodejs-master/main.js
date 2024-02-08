@@ -5,11 +5,27 @@ var qs = require('querystring');
 var template = require('./lib/template.js');
 var path = require('path');
 var sanitizeHtml = require('sanitize-html');
+var cookie = require('cookie');
+
+function authIsOwner(request, response){
+  var isOwner = false;
+    var cookies = {};
+    if(request.headers.cookie){
+      var cookies = cookie.parse(request.headers.cookie);
+    }
+    if(cookies.email === 'egoing777@gmail.com' && cookies.password === '111111'){
+      isOwner = true;
+    }
+    return isOwner
+}
 
 var app = http.createServer(function(request,response){
     var _url = request.url;
     var queryData = url.parse(_url, true).query;
     var pathname = url.parse(_url, true).pathname;
+    var isOwner = authIsOwner(request, response);
+    console.log(isOwner);
+    
     if(pathname === '/'){
       if(queryData.id === undefined){
         fs.readdir('./data', function(error, filelist){
@@ -141,17 +157,36 @@ var app = http.createServer(function(request,response){
         var list = template.list(filelist);
         var html = template.HTML(title, list,
           `
-          <form action = "login_process" method="post">
-            <p><input type = "text" name="email" placeholder ="email"></p>
-            <p><input type = "password" name="password" placeholder ="password"></p>
-            <p><input type = "submit"></p>
-          </form>
-          `
-          ,
+          <form action="login_process" method="post">
+            <p><input type="text" name="email" placeholder="email"></p>
+            <p><input type="password" name="password" placeholder="password"></p>
+            <p><input type="submit"></p>
+          </form>`,
           `<a href="/create">create</a>`
         );
         response.writeHead(200);
         response.end(html);
+      });
+    } else if(pathname === '/login_process'){
+      var body = '';
+      request.on('data', function(data){
+          body = body + data;
+      });
+      request.on('end', function(){
+          var post = qs.parse(body);
+          if(post.email === 'egoing777@gmail.com' && post.password === '111111') {
+            response.writeHead(302, {
+              'Set-Cookie':[
+                `email=${post.email}`,
+                `password=${post.password}`,
+                `nickname=egoing`
+              ],
+              Location: `/`
+            });
+            response.end();
+          } else {
+            response.end('Who?');
+          }
       });
     } else {
       response.writeHead(404);
